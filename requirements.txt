@@ -1,0 +1,10 @@
+numpy>=1.23.0
+scipy>=1.10.0
+opencv-python-headless>=4.5.0
+pillow>=10.0.0
+pycocotools>=2.0.0   
+lxml>=4.9.0                  
+tqdm>=4.65.0         
+tensorboard>=2.10.0  
+matplotlib>=3.7.0                            
+onnx>=1.14.0
