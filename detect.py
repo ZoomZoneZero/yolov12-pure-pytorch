@@ -19,10 +19,6 @@ class DFL(nn.Module):
         return self.cv(x.contiguous().view(B * 4, self.reg_max, 1, N).softmax(1)).view(B, 4, N)
 
 class Dist2bbox(nn.Module):
-    """
-    YOLOv12 几何解码模块
-    整合了锚点生成与坐标还原逻辑，旨在将网络输出的距离(ltrb)转换为物理坐标。
-    """
     def __init__(
         self, 
         stride: int,
@@ -34,14 +30,12 @@ class Dist2bbox(nn.Module):
 
     @staticmethod
     def get_anchors(x: torch.Tensor, size: tuple):
-        # 锚点生成 
         device = x.device
         h, w = size
         
         shift_x = torch.arange(w, device=device, dtype=torch.float32) + 0.5
         shift_y = torch.arange(h, device=device, dtype=torch.float32) + 0.5
-        
-        # indexing='ij' 保证 (y, x) 顺序对齐
+
         grid_y, grid_x = torch.meshgrid(shift_y, shift_x, indexing='ij')
         
         anchor_points = torch.stack((grid_x, grid_y), dim=-1).view(-1, 2).transpose(0, 1).unsqueeze(0)
@@ -49,34 +43,18 @@ class Dist2bbox(nn.Module):
 
 
     def forward(self, x: torch.Tensor, size: tuple) -> torch.Tensor:
-        """
-        在推理或训练过程中执行在线解码。
-        
-        参数对账:
-        - distance: DFL 后的输出，形状 [B, 4, N] (4代表 l, t, r, b)
-        - feat: 当前特征图，用于获取 H, W 信息 [B, C, H, W]
-        - stride: 该特征层相对于原图的缩放步长 (如 8, 16, 32)
-        """
-        # 锚点生成 
         anchor_points = self.get_anchors(x, size)
-        # 投影回原图尺寸
         anchor_points = anchor_points * self.stride
 
-        # --- 坐标还原 ---
-        # distance: [B, 4, N] -> split 为 [B, 2, N]
         lt, rb = torch.split(x, 2, dim=1)
-
-        # x1y1 = center - lt, x2y2 = center + rb
         x1y1 = anchor_points - (lt * self.stride)
         x2y2 = anchor_points + (rb * self.stride)
 
         if self.xywh:
-            # 转换为 center_x, center_y, width, height
             c_xy = (x1y1 + x2y2) / 2
             wh   = x2y2 - x1y1
             return torch.cat((c_xy, wh), dim=1) # [B, 4, N]
         
-        # 默认返回 [xmin, ymin, xmax, ymax]
         return torch.cat((x1y1, x2y2), dim=1) # [B, 4, N]
 
 class Detect(nn.Module):
@@ -139,7 +117,6 @@ class Detect_train(nn.Module):
         self.num_cls = num_cls
         self.reg_max = reg_max 
         
-        # 限制通道数，避免参数量过大
         ch_reg = max((16, in_channels[0] // 4, self.reg_max * 4)) 
         ch_cls = max(in_channels[0], min(self.num_cls, 100)) 
 
@@ -147,11 +124,10 @@ class Detect_train(nn.Module):
             nn.Sequential(
                 Conv(ch, ch_reg, 3),
                 Conv(ch_reg, ch_reg, 3),
-                nn.Conv2d(ch_reg, self.reg_max * 4, 1) # 回归分支不需要 Bias 初始化
+                nn.Conv2d(ch_reg, self.reg_max * 4, 1)
             ) for ch in in_channels
         )
         
-        # 注意：这里最后一层是 nn.Conv2d (线性输出)，不能带激活函数
         self.cv2 = nn.ModuleList(
             nn.Sequential(
                 DWConv(ch, ch, 3), Conv(ch, ch_cls, 1),        
@@ -165,7 +141,6 @@ class Detect_train(nn.Module):
             Dist2bbox(stride, xywh) for stride in strides
         )
         
-        # 调用 Bias 初始化
         self._initialize_biases(strides)
 
     def _initialize_biases(self, strides, cf=None):
@@ -174,7 +149,6 @@ class Detect_train(nn.Module):
         """
         import math
         for m, stride in zip(self.cv2, strides): 
-            # 查找最后一层卷积
             last_conv = None
             if isinstance(m, nn.Sequential):
                 for layer in reversed(m):
@@ -187,9 +161,8 @@ class Detect_train(nn.Module):
             if last_conv is None:
                 continue
 
-            # 计算先验概率
+            # 先验概率
             if cf is None:
-                # 自动计算: stride=8 -> bias≈-11, stride=32 -> bias≈-6
                 prior = 8 / self.num_cls / (640 / stride) ** 2
             else:
                 prior = cf
@@ -209,26 +182,18 @@ class Detect_train(nn.Module):
 
         for i, x in enumerate(inputs):
             h, w = x.shape[-2:]
-            stride = self.box[i].stride # 从 Dist2bbox 模块获取当前 stride
+            stride = self.box[i].stride 
 
-            # 分支推理
-            # [B, C, H, W] -> [B, C, N]
             raw_reg = self.cv1[i](x).flatten(2)   
             cls_out = self.cv2[i](x).flatten(2)   
             
-            # Box 解码
-            # DFL 计算: [B, 64, N] -> [B, 4, N] (normalized dist)
             dist = self.dfl(raw_reg)
-            # 坐标转换: Dist -> xyxy/xywh
             box_out = self.box[i](dist, (h, w)) 
             
             # 锚点生成 (用于 Loss)
-            # get_anchors 返回通常是 [1, 2, N] 或 [2, N]
             anchor_grid = Dist2bbox.get_anchors(x, (h, w))
             all_anchors.append(anchor_grid * stride) 
             
-            # 构造一个形状为 [1, 1, N] 的 stride 张量，方便后续广播
-            # 这样 cat 之后就是 [1, 1, 8400]，和 anchors [1, 2, 8400] 维度一致
             s_tensor = torch.full((1, 1, h * w), stride, device=x.device, dtype=x.dtype)
             all_strides.append(s_tensor)
 
@@ -237,7 +202,6 @@ class Detect_train(nn.Module):
             reg_outs.append(raw_reg)
 
         # 拼接所有层级的结果
-        # 最终输出形状参考:
         # box: [B, 4, 8400]
         # cls: [B, nc, 8400]
         # reg: [B, 64, 8400]
