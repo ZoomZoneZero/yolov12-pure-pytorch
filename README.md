@@ -1,9 +1,10 @@
-# YOLOv12：原生Pytorch上的精简复现
+[简体中文](README.md) | [English](README_EN.md)
+# YOLOv12：原生PyTorch上的精简复现
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-orange.svg)
 
 ## 项目简介
-本项目是基于Pytorch的 YOLOv12 复现，代码架构简洁清晰，可读性强，并附以**原创的 YOLOv12 流程图**。模型参数配置方便，同时设置了快捷的**linux自动化训练途径**，适合快速上手和学习架构，并用以训练模型。此外，本项目对 YOLOv12 在血细胞数据集（BCCD）复现和优化，模型在Large尺度上取得了 **0.915 mAP@0.5** 与 **0.624 mAP@0.5:0.95** 的表现。
+本项目是基于PyTorch的 YOLOv12 复现，代码架构简洁清晰，可读性强，并附以**原创的 YOLOv12 流程图**。模型参数配置方便，同时设置了快捷的**linux自动化训练途径**，适合快速上手和学习架构，并用以训练模型。此外，本项目对 YOLOv12 在血细胞数据集（BCCD）复现和优化，模型在Large尺度上取得了 **91.5% mAP@0.5** 与 **62.4% mAP@0.5:0.95** 的表现。
 
 ## 模型架构
 <details>
@@ -20,7 +21,7 @@
 2. [模型架构 Model Structure](#模型架构)
 3. [性能情况 Performance](#性能情况)
 4. [实现的内容 Achievement](#实现的内容)
-5. [效果示例 Outcomes](#效果示例)
+5. [效果示例 Outputs](#效果示例)
 6. [所需环境 Environment](#所需环境)
 7. [文件下载 Download](#文件下载)
 8. [参数配置 Configuration](#参数配置)
@@ -36,7 +37,7 @@
 ## 性能情况
 以下是对BCCD数据集在n、s、m、l尺度上分别训练得到的结果对比
 
-<img src="model_data/model_metrics.svg" width="82%" >
+<img src="model_data/model_metrics.svg" width="90%" >
 
 <details>
 <summary><b>点此展开详细mAP数据</b></summary>
@@ -114,7 +115,7 @@
 
 ## 效果示例
 <p align="center">
-  <img src="model_data/model_output.png" width="48%" >
+  <img src="model_data/model_output.png" width="60%" >
   <br>
   <i>yolov12_l</i>
 </p>
@@ -130,6 +131,15 @@
 下载后将数据集置于项目文件下一级即可，对其它数据集亦如此。
 
 ### 权重文件下载
+| 模型 | 数据集 | 输入图片大小 | mAP<sup>val<br>0.5 | mAP<sup>val<br>0.5:0.95 | 下载 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **YOLOv12-n** | BCCD | 640x640<sup>(1)</sup> | 89.0% | 50.5% |[yolov12_n.pth](https://github.com/zoomzonezero/yolov12-pure-pytorch/releases/download/pretrained-weights/yolov12_n.pth) |
+| **YOLOv12-s** | BCCD | 640x640 | 88.5% | 58.3% |[yolov12_s.pth](https://github.com/zoomzonezero/yolov12-pure-pytorch/releases/download/pretrained-weights/yolov12_s.pth) |
+| **YOLOv12-m** | BCCD | 640x640 | 89.3% | 60.0% |[yolov12_m.pth](https://github.com/zoomzonezero/yolov12-pure-pytorch/releases/download/pretrained-weights/yolov12_m.pth) |
+| **YOLOv12-l** | BCCD | 640x640 | 91.5% | 62.4% |[yolov12_l.pth](https://github.com/zoomzonezero/yolov12-pure-pytorch/releases/download/pretrained-weights/yolov12_l.pth) |
+
+<i><small><sup>(1)</sup> 使用 Letterbox 进行不失真的 resize</small></i><br>
+
 这是针对BCCD数据集在n、s、m、l上从头开始训练得到的权重，可用于对相似血细胞图片的目标检测，或对类似数据集的迁移学习。
 
 ## 参数配置
@@ -192,7 +202,7 @@ bash train_linux/run.sh
 
 ## 关于本项目
 
-- 本项目结合 YOLOv12 论文阐释的结构，对照官方代码了解其架构细节，绘制出 YOLOv12 的具体结构，并基于该逻辑使用原生、纯粹的Pytorch重写代码，去除了原版仓库复杂的层级封装以及兼容需要导致的代码冗余，提高了代码的简洁性与可读性，便于理解、学习和修改。其中，YOLOv12 的主要架构集中在`layers.py`、`framework.py`、`detect.py`、`loss.py`、`yolov12.py`这五个py文件中。
+- 本项目结合 YOLOv12 论文阐释的结构，对照官方代码了解其架构细节，绘制出 YOLOv12 的具体结构，并基于该逻辑使用原生、纯粹的PyTorch重写代码，去除了原版仓库复杂的层级封装以及兼容需要导致的代码冗余，提高了代码的简洁性与可读性，便于理解、学习和修改。其中，YOLOv12 的主要架构集中在`layers.py`、`framework.py`、`detect.py`、`loss.py`、`yolov12.py`这五个py文件中。
 
 - 本项目复用了 Bubbliiiing 框架中高效的 `utils` 工具集，以及`train.py`与`yolo4use.py`中的部分高效训练和预测工具架构，并跟据YOLOv12的特征进行了调整和适配。
 
@@ -202,7 +212,7 @@ bash train_linux/run.sh
 
 *特别感谢原作者团队在 YOLOv12 架构上的创新，以及 Bubbliiiing 提供的优秀工程化参考。*
 
-## reference
+## Reference
 **YOLOv12 论文**：[YOLOv12: Attention-Centric Real-Time Object Detectors](https://arxiv.org/abs/2502.12524)<br>
 **YOLOv12 官方仓库**：[https://github.com/sunsmarterjie/yolov12](https://github.com/sunsmarterjie/yolov12)<br>
 **Bubbliiiing Pytorch目标检测系列**：[https://github.com/bubbliiiing/yolox-pytorch](https://github.com/bubbliiiing/yolox-pytorch)<br>
