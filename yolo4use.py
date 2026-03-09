@@ -40,8 +40,7 @@ class YOLO(object):
         #---------------------------------------------------------------------#
         "nms_iou"           : 0.5,
         #---------------------------------------------------------------------#
-        #   该变量用于控制是否使用letterbox_image对输入图像进行不失真的resize，
-        #   在多次测试后，发现关闭letterbox_image直接resize的效果更好
+        #   该变量用于控制是否使用letterbox_image对输入图像进行不失真的resize
         #---------------------------------------------------------------------#
         "letterbox_image"   : True,
         #-------------------------------#
@@ -162,22 +161,15 @@ class YOLO(object):
             #---------------------------------------------------------#
             outputs = self.net(images)
             if isinstance(outputs, (list, tuple)):
-                # 只有当输出是元组（训练模式）或旧版列表时，才调用 decode_outputs
-                # 但根据你的模型结构，这里最好手动处理一下
                 pred_box = outputs[0]
                 pred_cls = outputs[1].sigmoid()
                 
-                # 坐标归一化（适配 NMS 内部的缩放逻辑）
                 pred_box[:, 0::2, :] /= self.input_shape[1]
                 pred_box[:, 1::2, :] /= self.input_shape[0]
                 
                 outputs = torch.cat([pred_box, pred_cls], dim=1).permute(0, 2, 1)
             else:
-                # 如果已经是 Tensor，说明 Detect 层已经处理好了
-                # 关键：我们之前在 EvalCallback 发现 NMS 会乘一遍宽高的坑
-                # 所以即使是 Tensor，在这里也要手动做一次归一化
-                # 假设 outputs 形状是 [1, 8400, 84]，前 4 列是坐标
-                outputs[:, :, 0:2] /= self.input_shape[1] # x1, y1 (这里简化处理，假设是正方形)
+                outputs[:, :, 0:2] /= self.input_shape[1] # x1, y1
                 outputs[:, :, 2:4] /= self.input_shape[0] # x2, y2
             #---------------------------------------------------------#
             #   将预测框进行堆叠，然后进行非极大抑制
@@ -236,7 +228,7 @@ class YOLO(object):
 
             top, left, bottom, right = box
 
-            # 1. 坐标取整并限制在图片范围内
+            # 坐标取整并限制在图片范围内
             top     = max(0, np.floor(top).astype('int32'))
             left    = max(0, np.floor(left).astype('int32'))
             bottom  = min(image.size[1], np.floor(bottom).astype('int32'))
@@ -256,13 +248,10 @@ class YOLO(object):
             label = '{} {:.2f}'.format(predicted_class, score)
             draw = ImageDraw.Draw(image)
             
-            # 兼容新旧 Pillow 的文字大小计算
             try:
-                # 新版 Pillow (10.0+)
                 text_bbox = draw.textbbox((0, 0), label, font)
                 label_size = (text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1])
             except AttributeError:
-                # 旧版 Pillow
                 label_size = draw.textsize(label, font)
             
             label = label.encode('utf-8')
@@ -305,7 +294,6 @@ class YOLO(object):
             outputs = self.net(images)
             
             if torch.is_tensor(outputs):
-                # 检查是否需要归一化（送入 NMS 前必须是 0-1）
                 if outputs[..., :4].max() > 1.5:
                     outputs = outputs.clone() 
                     outputs[..., 0:4] = outputs[..., 0:4] / self.input_shape[0]

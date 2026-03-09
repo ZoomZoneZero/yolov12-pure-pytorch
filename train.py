@@ -78,9 +78,9 @@ if __name__ == "__main__":
     # --- 全局硬件与环境参数 ---
     Cuda        = CUDA
     seed        = SEED
-    fp16        = FP16      # 建议开启，节省显存并加速
+    fp16        = FP16            # 建议开启，节省显存并加速
     distributed = DISTRIBUTED     # Linux下设为True开启多卡DDP
-    sync_bn     = SYNC_BN     # 多卡同步BatchNorm
+    sync_bn     = SYNC_BN         # 多卡同步BatchNorm
 
     save_dir     = SAVE_DIR    
     save_period  = SAVE_PERIOD        
@@ -102,19 +102,19 @@ if __name__ == "__main__":
 
     # --- 训练计划 ---
     Init_Epoch          = INIT_EPOCH
-    Freeze_Epoch        = FREEZE_EPOCH    # 冻结训练轮数
+    Freeze_Epoch        = FREEZE_EPOCH         # 冻结训练轮数
     Freeze_batch_size   = FREEZE_BATCH_SIZE    # 冻结时可开大点
-    UnFreeze_Epoch      = UNFREEZE_EPOCH   # 总轮数
-    Unfreeze_batch_size = UNFREEZE_BATCH_SIZE     # 解冻后建议减小 batch
-    Freeze_Train        = FREEZE_TRAIN  # 是否进行冻结主干训练
+    UnFreeze_Epoch      = UNFREEZE_EPOCH       # 总轮数
+    Unfreeze_batch_size = UNFREEZE_BATCH_SIZE  # 解冻后建议减小 batch
+    Freeze_Train        = FREEZE_TRAIN         # 是否进行冻结主干训练
 
     # --- 优化器与学习率 ---
-    Init_lr             = INIT_LR  # SGD建议1e-2, Adam建议1e-3
+    Init_lr             = INIT_LR        # SGD建议1e-2, Adam建议1e-3
     Min_lr              = MIN_LR
     optimizer_type      = OPTIMIZER_TYPE # "sgd" 或 "adam"
     momentum            = MOMENTUM
     weight_decay        = WEIGHT_DECAY
-    lr_decay_type       = LR_DECAY_TYPE # 学习率下降方式
+    lr_decay_type       = LR_DECAY_TYPE  # 学习率下降方式
 
     # --- 初始化设备环境 ---
     seed_everything(seed)
@@ -162,7 +162,7 @@ if __name__ == "__main__":
             if len(load_key) < (len(model_dict) * 0.8):
                 print("警告: 加载比例过低，请检查模型结构与权重是否匹配！")
     # --- 损失函数与记录器 ---
-    # 输入: model(images) 吐出的 (bboxes, logits, dist) 元组
+    # 输入: model(images) 的 (bboxes, logits, dist) 元组
     # 输出: total_loss 标量
     real_reg_max = model.module.detect.reg_max if distributed or isinstance(model, nn.DataParallel) else model.detect.reg_max
     yolo_loss = Yolo12_Loss(num_cls=num_cls, reg_max=real_reg_max)
@@ -178,16 +178,14 @@ if __name__ == "__main__":
     scaler = torch.amp.GradScaler('cuda') if fp16 else None
 
     # --- 优化器权重分组 ---
-    # 卷积层的 Weight 需要正则化(Weight Decay)来防止过拟合
-    # 但 Bias(偏置) 和 BN 层的参数如果加了正则化，反而会抑制模型收敛
     pg0, pg1, pg2 = [], [], []  
     for k, v in model.named_modules():
         if hasattr(v, "bias") and isinstance(v.bias, nn.Parameter):
-            pg2.append(v.bias)    # 组2: 所有的偏置 (no decay)
+            pg2.append(v.bias)    
         if isinstance(v, nn.BatchNorm2d) or "bn" in k:
-            pg0.append(v.weight)  # 组0: 所有的归一化权重 (no decay)
+            pg0.append(v.weight) 
         elif hasattr(v, "weight") and isinstance(v.weight, nn.Parameter):
-            pg1.append(v.weight)  # 组1: 所有的卷积权重 (apply decay)
+            pg1.append(v.weight)  
 
     if optimizer_type == "sgd":
         optimizer = optim.SGD(pg0, Init_lr, momentum=momentum, nesterov=True)
