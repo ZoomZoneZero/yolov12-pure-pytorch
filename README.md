@@ -8,7 +8,7 @@
 
 ## 模型架构
 <details>
-<summary><b>点此查看 YOLOv12 流程图（长图）</b></summary>
+<summary><b>点此查看原创 YOLOv12 流程图（长图）</b></summary>
   <p align="center">
       <img src="model_data/model_structure.svg" width="97%" >
     <br>
