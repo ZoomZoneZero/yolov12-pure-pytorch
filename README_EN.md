@@ -5,7 +5,8 @@
 
 ## Overview
 This project is a pure PyTorch reimplementation of YOLOv12. The architecture is decoupled and readable, featuring an **original flow chart** of the YOLOv12 model.<br> 
-This repository provides a decoupled training pipeline with automated dataset processing tools, enabling rapid deployment and flexible configuration. The implementation achieves 91.5% mAP@0.5 and 62.4% mAP@0.5:0.95 (Large scale) on the BCCD dataset.
+The model incorporates SDPA (Scaled Dot-Product Attention) modules to enable FlashAttention, significantly boosting both training and inference efficiency. With these optimizations, **the X (eXtremely Large) scale model achieves an inference speed of 56.4 FPS** on an NVIDIA RTX 4090, making it fully capable of real-time object detection tasks.<br> 
+This repository provides a decoupled training pipeline with automated dataset processing tools, enabling rapid deployment and flexible configuration. The implementation achieves **91.5% mAP@0.5 and 62.4% mAP@0.5:0.95** (Large scale) on the BCCD dataset.
 
 ## Model Structure
 <details>
