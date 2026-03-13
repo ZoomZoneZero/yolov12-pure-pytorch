@@ -4,7 +4,7 @@
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-orange.svg)
 
 ## 项目简介
-本项目是基于PyTorch的 YOLOv12 复现，代码架构简洁清晰，可读性强，并附以**原创的 YOLOv12 流程图**。模型参数配置方便，同时设置了快捷的**linux自动化训练途径**，适合快速上手和学习架构，并用以训练模型。此外，本项目对 YOLOv12 在血细胞数据集（BCCD）复现和优化，模型在Large尺度上取得了 **91.5% mAP@0.5** 与 **62.4% mAP@0.5:0.95** 的表现。
+本项目是基于PyTorch的 YOLOv12 复现，代码架构简洁清晰，可读性强，并附以**原创的 YOLOv12 流程图**。模型内部应用了 SDPA 模块实现 FlashAttention，提升了训练与推理效率。模型参数配置方便，同时设置了快捷的**linux自动化训练途径**，适合快速上手和学习架构，并用以训练模型。此外，本项目对 YOLOv12 在血细胞数据集（BCCD）复现和优化，模型在Large尺度上取得了 **91.5% mAP@0.5** 与 **62.4% mAP@0.5:0.95** 的表现。
 
 ## 模型架构
 <details>
@@ -204,7 +204,7 @@ bash train_linux/run.sh
 
 - 本项目结合 YOLOv12 论文阐释的结构，对照官方代码了解其架构细节，绘制出 YOLOv12 的具体结构，并基于该逻辑使用原生、纯粹的PyTorch重写代码，去除了原版仓库复杂的层级封装以及兼容需要导致的代码冗余，提高了代码的简洁性与可读性，便于理解、学习和修改。其中，YOLOv12 的主要架构集中在`layers.py`、`framework.py`、`detect.py`、`loss.py`、`yolov12.py`这五个py文件中。
 
-- 本项目复用了 Bubbliiiing 框架中高效的 `utils` 工具集，以及`train.py`与`yolo4use.py`中的部分高效训练和预测工具架构，并跟据YOLOv12的特征进行了调整和适配。
+- 本项目复用了 Bubbliiiing 框架中高效的 `utils` 工具集，以及`train.py`与`yolo4use.py`中的部分高效训练和预测工具架构，保留了其内置的 Mosaic 与 Mixup 数据增强，以及 EMA（指数移动平均）权重平滑等高级训练策略，并跟据YOLOv12的特征进行了调整和适配。
 
 - 本项目创造性地设计了`config.py`、`train_linux`与自动转化数据集模块，给训练和使用带来很好的便利性。
 

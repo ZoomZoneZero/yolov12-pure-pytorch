@@ -91,37 +91,25 @@ class YOLO(object):
         # 导入权重
         print(f"正在加载权重: {self.model_path}")
         model_dict      = self.net.state_dict()
-        pretrained_dict = torch.load(self.model_path, map_location=device)
+        pretrained_dict = torch.load(self.model_path, map_location=device, weights_only=False)
         
         if "model" in pretrained_dict:
             pretrained_dict = pretrained_dict["model"]
 
-        load_key, no_load_key, temp_dict = [], [], {}
+        load_key, temp_dict = [], {}
         for k, v in pretrained_dict.items():
-            if k not in model_dict and ("backbone." + k) in model_dict:
-                real_key = "backbone." + k
-                
-            elif k not in model_dict and k.startswith("backbone.") and ("backbone." + k) in model_dict:
-                real_key = "backbone." + k
-                
-            elif k in model_dict:
-                real_key = k
-            else:
-                real_key = None
+            # 自动映射 backbone 前缀逻辑
+            rk = k if k in model_dict else f"backbone.{k}" if f"backbone.{k}" in model_dict else None
+            # 跳过不同类别的 Detect Head
+            if rk and np.shape(model_dict[rk]) == np.shape(v):
+                temp_dict[rk] = v
+                load_key.append(rk)
 
-            if real_key is not None:
-                if np.shape(model_dict[real_key]) == np.shape(v):
-                    temp_dict[real_key] = v
-                    load_key.append(real_key)
-                else:
-                    no_load_key.append(k) 
-            else:
-                no_load_key.append(k)
+        self.net.load_state_dict(temp_dict, strict=False)
+        print(f"Successfully loaded {len(load_key)} / {len(model_dict)} keys.")
+        if len(load_key) < (len(model_dict) * 0.8):
+            print("警告: 加载比例过低，请检查模型结构与权重是否匹配！")
 
-        # 更新权重
-        model_dict.update(temp_dict)
-        self.net.load_state_dict(model_dict)
-        
         self.net    = self.net.eval()
         print('{} model, and classes loaded.'.format(self.model_path))
         if not onnx:

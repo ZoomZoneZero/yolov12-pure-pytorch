@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 class Conv(nn.Module):
     def __init__(
@@ -97,17 +98,25 @@ class AAttn(nn.Module):
                 assert N % self.area == 0, f"Internal Error: N({N}) is not divisible by area({self.area})"
             qkv =qkv.reshape(B * self.area, N // self.area, self.all_head_dim * 3) #(B, N, C2)->(B2, N2, C2)
             B, N, _ = qkv.shape
-        q, k, v = (
-            qkv.view(B, N, self.num_heads, self.head_dim * 3).permute(0,2,3,1)
-            .split([self.head_dim, self.head_dim, self.head_dim],dim=2)
-        ) #q,k,v.shape:(B2, num_heads, head_dim, N2)
+        q, k, v = qkv.view(B, N, self.num_heads, 3, self.head_dim).permute(3, 0, 2, 1, 4)
+        q, k, v = q.contiguous(), k.contiguous(), v.contiguous()
 
-        attn = (q.transpose(-2,-1) @ k) * (self.head_dim**-0.5)
-        attn = attn.softmax(dim=-1) #attn.shape:(B2, num_heads, N2, N2)
-        x = v @ attn.transpose(-2,-1) # -> (B2, num_heads, head_dim, N2)
+        x = F.scaled_dot_product_attention(q, k, v)
 
-        x = x.permute(0, 3, 1, 2)  
-        v = v.permute(0, 3, 1, 2)
+        x = x.transpose(1, 2)
+        v = v.transpose(1, 2)
+        # 以下是不依赖sdpa的attention实现，可供参考
+        # q, k, v = (
+        #     qkv.view(B, N, self.num_heads, self.head_dim * 3).permute(0,2,3,1)
+        #     .split([self.head_dim, self.head_dim, self.head_dim],dim=2)
+        # ) #q,k,v.shape:(B2, num_heads, head_dim, N2)
+
+        # attn = (q.transpose(-2,-1) @ k) * (self.head_dim**-0.5)
+        # attn = attn.softmax(dim=-1) #attn.shape:(B2, num_heads, N2, N2)
+        # x = v @ attn.transpose(-2,-1) # -> (B2, num_heads, head_dim, N2)
+
+        # x = x.permute(0, 3, 1, 2)  
+        # v = v.permute(0, 3, 1, 2)
         if self.area > 1:
             x = x.reshape(B // self.area, N * self.area, self.all_head_dim)
             v = v.reshape(B // self.area, N * self.area, self.all_head_dim)
