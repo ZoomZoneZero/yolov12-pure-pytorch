@@ -128,7 +128,40 @@
 ## 文件下载
 ### 数据集下载
 下载地址：[BCCD 开源仓库 (VOC格式)](https://github.com/Shenggan/BCCD_Dataset)<br>
-下载后将数据集置于项目文件下一级即可，对其它数据集亦如此。
+下载后将数据集置于项目文件下一级即可，对其它数据集亦如此。<br>
+**为了确保脚本正常运行，请将数据集按照以下结构放置：**<br>
+VOC 数据集：<br>
+```text
+DATASET_NAME/
+├── Annotations/          # 存放 XML 标注文件
+│   ├── 000001.xml
+│   └── ...
+├── JPEGImages/           # 存放对应的 JPG 图片
+│   ├── 000001.jpg
+│   └── ...
+└── ImageSets/            # 训练集划分索引 (运行脚本后自动生成)
+    └── Main/
+        ├── train.txt
+        ├── val.txt
+        ├── trainval.txt
+        └── test.txt
+```
+
+COCO 数据集：<br>
+```text
+DATASET_NAME/
+├── annotations/          # 存放 JSON 格式标注文件
+│   ├── instances_train2017.json
+│   ├── instances_val2017.json
+│   └── ...
+├── train2017/            # 训练集图片
+│   ├── 000000000009.jpg
+│   ├── 000000000025.jpg
+│   └── ...
+└── val2017/              # 验证集图片
+    ├── 000000000139.jpg
+    └── ...
+```
 
 ### 权重文件下载
 | 模型 | 数据集 | 输入图片大小 | mAP<sup>val<br>0.5 | mAP<sup>val<br>0.5:0.95 | 下载 |
