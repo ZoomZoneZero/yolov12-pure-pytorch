@@ -241,6 +241,8 @@ bash train_linux/run.sh
 
 - 本项目创造性地设计了`config.py`、`train_linux`与自动转化数据集模块，给训练和使用带来很好的便利性。
 
+- 本项目在对照官方代码的过程中，发现了其核心算子 `AAttn` 在输入通道 dim 不能被 num_heads 整除时会产生报错的隐患，并提交了修改，**该修改现已合入 Ultralytics 主分支**([**PR #24114**](https://github.com/ultralytics/ultralytics/pull/24114))。
+
 - 本项目遵循 AGPL-3.0 协议，严格遵守 YOLOv12 官方仓库的授权条款。
 
 - 本项目模型框架严格基于官方 YAML 搭建，而在尝试导入官方权重时发现在部分层不完全匹配，无法直接导入。经查证，原因在于官方权重所对应的模型与目前 YAML 文件有所偏差，可能是基于早期某版代码训练得到的。
@@ -249,5 +251,6 @@ bash train_linux/run.sh
 
 ## Reference
 **YOLOv12 论文**：[YOLOv12: Attention-Centric Real-Time Object Detectors](https://arxiv.org/abs/2502.12524)<br>
-**YOLOv12 官方仓库**：[https://github.com/sunsmarterjie/yolov12](https://github.com/sunsmarterjie/yolov12)<br>
+**YOLOv12 论文仓库**：[https://github.com/sunsmarterjie/yolov12](https://github.com/sunsmarterjie/yolov12)<br>
+**Ultralytics 官方仓库**：[https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)<br>
 **Bubbliiiing Pytorch目标检测系列**：[https://github.com/bubbliiiing/yolox-pytorch](https://github.com/bubbliiiing/yolox-pytorch)<br>
