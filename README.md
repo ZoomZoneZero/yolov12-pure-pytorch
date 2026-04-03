@@ -241,7 +241,7 @@ bash train_linux/run.sh
 
 - 本项目创造性地设计了`config.py`、`train_linux`与自动转化数据集模块，给训练和使用带来很好的便利性。
 
-- 本项目在对照官方代码的过程中，发现了其核心算子 `AAttn` 在输入通道 dim 不能被 num_heads 整除时会产生报错的隐患，并提交了修改，**该修改现已合入 Ultralytics 主分支**([**PR #24114**](https://github.com/ultralytics/ultralytics/pull/24114))。
+- 本项目在对照官方代码的过程中，发现其核心算子 `AAttn` 在输入通道 dim 不能被 num_heads 整除时会产生报错的隐患，并提交了修改，**该修改现已合入 Ultralytics 主分支**([**PR #24114**](https://github.com/ultralytics/ultralytics/pull/24114))。
 
 - 本项目遵循 AGPL-3.0 协议，严格遵守 YOLOv12 官方仓库的授权条款。
 
